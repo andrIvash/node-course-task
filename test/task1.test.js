@@ -5,6 +5,7 @@ const resultDir = './tasks/task1/to';
 const fs = require('fs');
 const path = require('path');
 const files = [];
+const dirs = [];
 // Есть сложная структура папок (обязательна вложенность папок) с музыкальными файлами
 // (можно заменить файлами изображений). Необходимо разобрать нашу музыкальную коллекцию,
 // расположив все файлы по новым папкам в алфавитном порядке, т.е. все файлы начинающиеся 
@@ -12,16 +13,21 @@ const files = [];
 // расширениям)
 // Старая папка должна быть удалена.
 
-function read (currentPath) {
+function read (currentPath, type) {
   fs.readdir(currentPath, (err, items) => {
     if (err) throw new Error(err);
     items.forEach(item => {
       var itemPath = path.join(currentPath, item);
       var state = fs.statSync(itemPath);
       if (state.isDirectory()) {
-        read(itemPath);
+        if (type === 'dir') {
+          dirs.push(itemPath);
+        }
+        read(itemPath, type);
       } else {
-        files.push(path.parse(itemPath).base)
+        if (type === 'file') {
+          files.push(path.parse(itemPath).base)
+        }
       }
     });
   });
@@ -34,13 +40,29 @@ function read (currentPath) {
  4. Удалена ли исходная директория
 */
 
+describe('test initial data', () => {
+  it('should the initial directory exist and not be empty', (done) => {
+    expect(initialDir).to.be.a('string');
+    fs.readdir(initialDir, (err, items) => {
+      if (err) {
+        throw new Error('Unable to read dir');
+      }
+      expect(items).to.be.a('array');
+      expect(items.length).to.not.be.null;
+      done();
+    });
+  });
+});
+
 describe('test resortData function', () => {
   before(function () {
-    read(initialDir);
+    read(initialDir, 'dir');
+    read(initialDir, 'file');
   });
 
-  it('should return the initial directory name', () => {
-    expect(initialDir).to.be.a('string');
+  it('should the output directory created', () => {
     console.log(files);
+    console.log(dirs);
+    expect(true).to.be.true;
   });
 });
