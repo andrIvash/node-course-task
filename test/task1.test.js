@@ -65,4 +65,11 @@ describe('test resortData function', () => {
     console.log(dirs);
     expect(true).to.be.true;
   });
+
+  it('should the initial directory deleted', (done) => {
+    fs.readdir('./tasks', (err, res) => {
+      expect(err).to.not.equal(null);
+      done();
+    });
+  });
 });
