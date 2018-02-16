@@ -1,17 +1,16 @@
+/*
+ 1. Вывести список всех вложенных файлов
+ 2. Проверить созданы ли новые директории согласно первым буквам в именах файлов
+ 3. Проверить находяться ли в директориях файлы которые начинаются на соответсвующую букву
+ 4. Удалена ли исходная директория
+*/
+
 const expect = require('chai').expect;
-const resortData = require('../tasks/task1');
-const initialDir = './tasks/task1/from';
-const resultDir = './tasks/task1/to';
+const task1 = require('../tasks/task1');
 const fs = require('fs');
 const path = require('path');
 const files = [];
 const dirs = [];
-// Есть сложная структура папок (обязательна вложенность папок) с музыкальными файлами
-// (можно заменить файлами изображений). Необходимо разобрать нашу музыкальную коллекцию,
-// расположив все файлы по новым папкам в алфавитном порядке, т.е. все файлы начинающиеся 
-// на “a” должны быть в папке “A” и т.д. (для изображений можно отсортировать по 
-// расширениям)
-// Старая папка должна быть удалена.
 
 function read (currentPath, type) {
   fs.readdir(currentPath, (err, items) => {
@@ -26,26 +25,28 @@ function read (currentPath, type) {
         read(itemPath, type);
       } else {
         if (type === 'file') {
-          files.push(path.parse(itemPath).base)
+          files.push(path.parse(itemPath).base);
         }
       }
     });
   });
 }
 
-/*
- 1. Вывести список всех вложенных файлов
- 2. Проверить созданы ли новые директории согласно первым буквам в именах файлов
- 3. Проверить находяться ли в директориях файлы которые начинаются на соответсвующую букву
- 4. Удалена ли исходная директория
-*/
+function arrayContainsArray (superset, subset) {
+  if (0 === subset.length) {
+    return false;
+  }
+  return subset.every(function (value) {
+    return (superset.indexOf(value) >= 0);
+  });
+}
 
 describe('test initial data', () => {
   it('should the initial directory exist and not be empty', (done) => {
-    expect(initialDir).to.be.a('string');
-    fs.readdir(initialDir, (err, items) => {
+    expect(task1.initialDir).to.be.a('string');
+    fs.readdir(task1.initialDir, (err, items) => {
       if (err) {
-        throw new Error('Unable to read dir');
+        throw new Error('Unable to read initial dir');
       }
       expect(items).to.be.a('array');
       expect(items.length).to.not.be.null;
@@ -56,18 +57,50 @@ describe('test initial data', () => {
 
 describe('test resortData function', () => {
   before(function () {
-    read(initialDir, 'dir');
-    read(initialDir, 'file');
+    read(task1.initialDir, 'file');
+    task1.resortData(task1.initialDir, task1.resultDir);
+    read(task1.resultDir, 'dir');
   });
 
-  it('should the output directory created', () => {
-    console.log(files);
-    console.log(dirs);
-    expect(true).to.be.true;
+  it('should the output directory created', (done) => {
+    fs.readdir(task1.resultDir, (err, res) => {
+      expect(err).to.equal(null);
+      done();
+    });
+  });
+
+  it('should subset directories created according to initial file names', () => {
+    const superset = files.map(item => item[0].toUpperCase());
+    const subset = dirs.map(item => item.split('/').pop().toUpperCase());
+    expect(arrayContainsArray(superset, subset)).to.be.true;
+  });
+
+  it('should subset directories contains right files', (done) => {
+    const result = [];
+    const promises = [];
+    dirs.forEach(dir => {
+      let pr = new Promise((resolve, reject) => {
+        fs.readdir(dir, (err, items) => {
+          if (err) {
+            console.log('error');
+            reject(err);
+          }
+          const filtered = items.filter(item => item[0].toUpperCase() !== dir.split('/').pop().toUpperCase());
+          filtered.length === 0 ? result.push(true) : result.push(false);
+          resolve();
+        });
+      }).catch(err => {
+        console.log(err);
+      });
+      promises.push(pr);
+    });
+    Promise.all(promises).then(() => {
+      expect(result.findIndex((elem) => elem === false)).to.equal(-1);
+    }).then(done, done);
   });
 
   it('should the initial directory deleted', (done) => {
-    fs.readdir('./tasks', (err, res) => {
+    fs.readdir(task1.initialDir, (err, res) => {
       expect(err).to.not.equal(null);
       done();
     });
