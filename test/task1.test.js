@@ -41,6 +41,20 @@ function arrayContainsArray (superset, subset) {
   });
 }
 
+function deleteDir (path) {
+  if (fs.existsSync(path)) {
+    fs.readdirSync(path).forEach((file, index) => {
+      let curPath = path + '/' + file;
+      if (fs.statSync(curPath).isDirectory()) {
+        deleteDir(curPath);
+      } else {
+        fs.unlinkSync(curPath);
+      }
+    });
+    fs.rmdirSync(path);
+  }
+};
+
 describe('test initial data', () => {
   it('should the initial directory exist and not be empty', (done) => {
     expect(task1.initialDir).to.be.a('string');
@@ -60,6 +74,10 @@ describe('test resortData function', () => {
     read(task1.initialDir, 'file');
     task1.resortData(task1.initialDir, task1.resultDir);
     read(task1.resultDir, 'dir');
+  });
+
+  after(function () {
+    deleteDir(task1.resultDir);
   });
 
   it('should the output directory created', (done) => {
